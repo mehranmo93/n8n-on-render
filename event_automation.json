@@ -1,0 +1,648 @@
+{
+  "name": "ING",
+  "nodes": [
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {
+          "language": "fa"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        380,
+        -100
+      ],
+      "id": "b941a63f-31e7-4e29-9388-eba4db7d6ec6",
+      "name": "OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "QCGksvL2xispOEGX",
+          "name": "OpenAi me"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -520,
+        480
+      ],
+      "id": "e215a69a-1c34-41c6-bed8-12d60009b040",
+      "name": "Telegram Trigger",
+      "webhookId": "99850f04-2d2f-4f7c-a675-58533dda97e3",
+      "credentials": {
+        "telegramApi": {
+          "id": "GGgBBMtV9okyOvTs",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Telegram Trigger').item.json.message.voice.file_id }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "id": "130c168e-9664-48d8-b7f9-a1f33fead205"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "audio"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "b4edf9ff-d948-40fb-86bb-7c4571801498",
+                    "leftValue": "={{ $('Telegram Trigger').item.json.message.voice.file_id }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notExists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "text"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -100,
+        20
+      ],
+      "id": "34cba643-ea7f-46a8-accb-932b183c42d4",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $('Telegram Trigger').item.json.message.voice.file_id }}"
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        220,
+        -120
+      ],
+      "id": "dd2b0c31-a706-475e-a4f5-a0b4c73aef10",
+      "name": "Telegram",
+      "webhookId": "bc24e18e-2a3d-43fc-a4b2-e19503fb2199",
+      "credentials": {
+        "telegramApi": {
+          "id": "GGgBBMtV9okyOvTs",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "بزار ببینم ..",
+        "additionalFields": {
+          "appendAttribution": false,
+          "reply_to_message_id": "={{ $json.message.message_id }}"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -240,
+        340
+      ],
+      "id": "469f668f-9f05-4ff2-bb98-466e1f1a90a9",
+      "name": "Telegram1",
+      "webhookId": "58ea844b-3011-49e8-9e06-ef156a15103c",
+      "credentials": {
+        "telegramApi": {
+          "id": "GGgBBMtV9okyOvTs",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Telegram Trigger').item.json.message.text ?? $('OpenAI').item.json.text }}",
+        "options": {
+          "systemMessage": "=شما یک دستیار هوش مصنوعی هستید که از طریق تلگرام با کاربر ارتباط برقرار می‌کند و وظیفهٔ کامل مدیریت تقویم (خواندن، ایجاد، حذف و به‌روزرسانی رویدادها) را بر عهده دارید. ابزارهای در دسترس شما عبارت‌اند از:\n- **read**: خواندن رویدادهای تقویم در یک بازهٔ زمانی مشخص  \n- **create**: ایجاد یک رویداد جدید در تقویم  \n- **delete**: حذف یک رویداد موجود بر اساس شناسهٔ مشخص  \n\ntoday is {{ $now.toDateTime().setZone('Asia/Tehran').toFormat('yyyy-MM-dd HH:mm:ss') }} \n\n\n\nbe careful about today and tomorow,if it is after midnight we are already in today\n\nif user asks for deletinging multiple events, do it one by one by evenid you take via read tool\n\nuse informal way of tralking in chat.\nyou cant set multiple task for the same time, ask to change if sb says i wanna set a task at 9pm while they already have a task at that time"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        120,
+        240
+      ],
+      "id": "055d7a60-8af6-44a5-9029-f569dd99860c",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "content": "## فعال سازی",
+        "height": 420,
+        "width": 440,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -540,
+        320
+      ],
+      "typeVersion": 1,
+      "id": "fcec423e-2d4e-4401-94c6-ea1bb2e47efb",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## تبدیل ویس به متن",
+        "height": 300,
+        "width": 480,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        60,
+        -160
+      ],
+      "typeVersion": 1,
+      "id": "f0bc7a82-7f18-41ab-bd67-f4aa359d5dd7",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        420
+      ],
+      "id": "67b8edbe-cbde-4b57-826b-a3219448abb0",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "QCGksvL2xispOEGX",
+          "name": "OpenAi me"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+        "contextWindowLength": 3
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        60,
+        660
+      ],
+      "id": "aab8364a-a695-4954-9dfc-548ad4cefb36",
+      "name": "Postgres Chat Memory",
+      "credentials": {
+        "postgres": {
+          "id": "rVhIuxkyfnDicOsK",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        240
+      ],
+      "id": "43e85ec6-5629-46d1-97b5-fce0779768d2",
+      "name": "Telegram2",
+      "webhookId": "bae57f62-0feb-47f7-95cd-8a600763475c",
+      "credentials": {
+        "telegramApi": {
+          "id": "GGgBBMtV9okyOvTs",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## پاسخ",
+        "height": 200,
+        "width": 200
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        400,
+        200
+      ],
+      "typeVersion": 1,
+      "id": "35168849-b853-41f3-9fcc-5bfca5442909",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## ابزار ها",
+        "height": 280,
+        "width": 380,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        220,
+        460
+      ],
+      "typeVersion": 1,
+      "id": "a6dfab05-1179-4645-9a65-4ffea260070a",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n## ذخیره کردن تاریخچه پیام ها",
+        "height": 260,
+        "width": 260,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -60,
+        580
+      ],
+      "typeVersion": 1,
+      "id": "c5879775-3b5f-45a0-9732-22434f74662f",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "## مدل زبانی\n",
+        "height": 200,
+        "width": 200,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -80,
+        360
+      ],
+      "typeVersion": 1,
+      "id": "0dfb36f3-f172-441c-8470-406a3a23bb5d",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "خواندن رویدادهای تقویم کاربر در یک بازهٔ زمانی مشخص",
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "amir.hoseiinian@gmail.com",
+          "mode": "list",
+          "cachedResultName": "amir.hoseiinian@gmail.com"
+        },
+        "limit": 10,
+        "timeMin": "={{ $fromAI('After', ``, 'string') }}",
+        "timeMax": "={{ $fromAI('Before', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        460,
+        480
+      ],
+      "id": "e8a444df-882a-42c9-b991-215f7a6e5107",
+      "name": "read",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "rM4JD2UEuxqxdviC",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "ایجاد یک رویداد جدید در تقویم کار",
+        "calendar": {
+          "__rl": true,
+          "value": "amir.hoseiinian@gmail.com",
+          "mode": "list",
+          "cachedResultName": "amir.hoseiinian@gmail.com"
+        },
+        "start": "={{ $fromAI('Start', ``, 'string') }}",
+        "end": "={{ $fromAI('End', ``, 'string') }}",
+        "useDefaultReminders": false,
+        "additionalFields": {
+          "attendees": [],
+          "description": "={{ $fromAI('Description', ``, 'string') }}",
+          "summary": "={{ $fromAI('Summary', ``, 'string') }}"
+        },
+        "remindersUi": {
+          "remindersValues": [
+            {
+              "method": "email",
+              "minutes": 30
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        380,
+        560
+      ],
+      "id": "bb815139-816c-44fb-8aa0-5d1b0abdd093",
+      "name": "create",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "rM4JD2UEuxqxdviC",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "حذف کردن",
+        "operation": "delete",
+        "calendar": {
+          "__rl": true,
+          "value": "amir.hoseiinian@gmail.com",
+          "mode": "list",
+          "cachedResultName": "amir.hoseiinian@gmail.com"
+        },
+        "eventId": "={{ $fromAI('Event_ID', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        280,
+        560
+      ],
+      "id": "69de025c-5a60-4676-9d86-7c7d1a08248b",
+      "name": "delete",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "rM4JD2UEuxqxdviC",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "537daf3d-b168-4d0c-b0da-7f5be039b1a2",
+              "leftValue": "={{ $json.message.from.id }}",
+              "rightValue": 7987498673,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -380,
+        480
+      ],
+      "id": "254a1934-a3dd-4713-a27c-adb0a8f6b40b",
+      "name": "If"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        -240,
+        600
+      ],
+      "id": "d68be052-fbbc-4317-a502-608b1315ed99",
+      "name": "No Operation, do nothing"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram": {
+      "main": [
+        [
+          {
+            "node": "OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram1": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        []
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Telegram2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "read": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "delete": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Telegram1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Tehran",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "93021886-baf9-4964-9908-0c69716b4123",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f78e13b29ff8cd79fd356969ce1b617bcd018a8e1c5cd43a823291df262824dd"
+  },
+  "id": "jY2hQxA0Y74ozgPT",
+  "tags": []
+}

@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: n8n
+    env: docker
+    plan: free
+    autoDeploy: false
+    envVars:
+      - key: N8N_BASIC_AUTH_ACTIVE
+        value: "true"
+      - key: N8N_BASIC_AUTH_USER
+        value: Mehran
+      - key: N8N_BASIC_AUTH_PASSWORD
+        value: Mm_98741236
+      - key: WEBHOOK_TUNNEL_URL
+        value: https://your-service-name.onrender.com
+
+
+      # PostgreSQL settings
+      - key: DB_TYPE
+        value: postgresdb
+      - key: DB_POSTGRESDB_HOST
+        value: dpg-d1nj2c2dbo4c73elbpo0-a
+      - key: DB_POSTGRESDB_PORT
+        value: "5432"
+      - key: DB_POSTGRESDB_DATABASE
+        value: n8n_db_g4r6
+      - key: DB_POSTGRESDB_USER
+        value: n8n_db_g4r6_user
+      - key: DB_POSTGRESDB_PASSWORD
+        value: Mm_98741236
